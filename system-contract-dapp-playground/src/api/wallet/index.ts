@@ -91,3 +91,36 @@ export const requestAccount = async (walletProvider: ethers.BrowserProvider): Pr
     return { err };
   }
 };
+
+/**
+ * @dev requests MetaMask to add the Hedera Testnet chain
+ * 
+ * @params walletProvider: ethers.BrowserProvider
+ * 
+ * @returns Promise<IWalletResult>
+ */
+export const addEthereumChain = async (
+  walletProvider: ethers.BrowserProvider
+): Promise<IWalletResult> => {
+  try {
+    const hederaTestnetParams = {
+      chainId: '0x128',
+      chainName: 'Hedera Testnet',
+      nativeCurrency: {
+        name: 'HBAR',
+        symbol: 'HBAR',
+        decimals: 18
+      },
+      rpcUrls: ['https://testnet.hashio.io/api'],
+      blockExplorerUrls: ['https://hashscan.io/testnet/dashboard']
+    };
+    
+    await walletProvider.send('wallet_addEthereumChain', [hederaTestnetParams]);
+    return { err: null };
+  } catch (err) {
+    console.error('Error adding Hedera Testnet chain:', err);
+    return { err };
+  }
+};
+
+

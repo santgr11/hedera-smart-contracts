@@ -54,7 +54,7 @@ export const NetworkMismatchToast = ({ toaster }: PageProps) => {
       <div className="text-white font-styrene bg-black px-6 py-3 rounded-xl tracking-wide max-w-sm">
         <div className="font-semibold">🚨 Current network mismatch! 🚨</div>
         <div>
-          Follow this{' '}
+        Accept the network addition in your wallet or follow this{' '}
           <Link
             href="https://github.com/hashgraph/hedera-smart-contracts/tree/main/system-contract-dapp-playground#initial-account-and-wallet-setup-important"
             target="_blank"
