@@ -10,7 +10,7 @@ import { useRouter } from 'next/navigation';
 import { storeAccountInfoInCookies } from '@/api/cookies';
 import { VerticalCommonVariants } from '@/libs/framer-motion/variants';
 import { chainIdToNetwork, isCorrectHederaNetwork } from '@/utils/common/helpers';
-import { requestAccount, getWalletProvider, getCurrentChainId, addEthereumChain } from '@/api/wallet';
+import { requestAccount, getWalletProvider, getCurrentChainId, switchToHederaTestnet } from '@/api/wallet';
 import { HEDERA_COMMON_WALLET_REVERT_REASONS, OFFCIAL_NETWORK_NAME } from '@/utils/common/constants';
 import { NoWalletToast, CommonErrorToast, NetworkMismatchToast } from '@/components/toast/CommonToast';
 
@@ -31,9 +31,7 @@ const LandingPage = () => {
 
     // detect if the current network is expected Hedera Networks
     if (!(await isCorrectHederaNetwork(walletProvider))) {
-      NetworkMismatchToast({ toaster });
-      addEthereumChain(walletProvider)
-      return;
+      await switchToHederaTestnet(walletProvider);
     }
 
     // call requestAccount() API for users to connect their account to the DApp

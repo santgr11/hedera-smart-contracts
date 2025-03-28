@@ -2,6 +2,7 @@
 
 import { IWalletResult } from '@/types/common';
 import { ethers, BrowserProvider } from 'ethers';
+import { HEDERA_NETWORKS, PROTECTED_ROUTES } from '@/utils/common/constants';
 
 /**
  * @dev get wallet object if available
@@ -104,22 +105,51 @@ export const addEthereumChain = async (
 ): Promise<IWalletResult> => {
   try {
     const hederaTestnetParams = {
-      chainId: '0x128',
-      chainName: 'Hedera Testnet',
-      nativeCurrency: {
-        name: 'HBAR',
-        symbol: 'HBAR',
-        decimals: 18
-      },
-      rpcUrls: ['https://testnet.hashio.io/api'],
-      blockExplorerUrls: ['https://hashscan.io/testnet/dashboard']
+      chainId: HEDERA_NETWORKS.testnet.chainIdHex,
+      chainName: HEDERA_NETWORKS.testnet.chainName,
+      nativeCurrency: HEDERA_NETWORKS.testnet.nativeCurrency,
+      rpcUrls: [HEDERA_NETWORKS.testnet.rpcUrls],
+      blockExplorerUrls: [HEDERA_NETWORKS.testnet.blockExplorerUrls]
     };
+
     
     await walletProvider.send('wallet_addEthereumChain', [hederaTestnetParams]);
     return { err: null };
   } catch (err) {
     console.error('Error adding Hedera Testnet chain:', err);
     return { err };
+  }
+};
+
+/**
+ * @dev requests MetaMask to switch to the Hedera Testnet chain
+ * If the chain hasn't been added to MetaMask yet, it will add it
+ * 
+ * @params walletProvider: ethers.BrowserProvider
+ * 
+ * @returns Promise<IWalletResult>
+ */
+export const switchToHederaTestnet = async (
+  walletProvider: ethers.BrowserProvider
+): Promise<IWalletResult> => {
+  try {
+    // Try to switch to the Hedera Testnet chain
+    await walletProvider.send('wallet_switchEthereumChain', [{ chainId: '0x128' }]);
+    return { err: null };
+  } catch (error: any) {
+    // If the chain hasn't been added yet (error code 4902), add it
+    if (error.error.code === 4902) {
+      try {
+        const result = await addEthereumChain(walletProvider);
+        return result;
+      } catch (addError) {
+        console.error('Error adding Hedera Testnet chain:', addError);
+        return { err: addError };
+      }
+    }
+    
+    console.error('Error switching to Hedera Testnet chain:', error);
+    return { err: error };
   }
 };
 
