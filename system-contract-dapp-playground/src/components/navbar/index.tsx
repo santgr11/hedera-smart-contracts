@@ -7,15 +7,17 @@ import Image from 'next/image';
 import { motion } from 'framer-motion';
 import WalletPopup from '../wallet-popup';
 import { useToast } from '@chakra-ui/react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { TNetworkName } from '@/types/common';
 import { usePathname } from 'next/navigation';
 import { BsChevronDown } from 'react-icons/bs';
 import { CommonErrorToast } from '../toast/CommonToast';
-import { isProtectedRoute } from '@/utils/common/helpers';
-import { loadAccountInfoFromCookies } from '@/api/cookies';
+import { chainIdToNetwork, isProtectedRoute } from '@/utils/common/helpers';
+import { loadAccountInfoFromCookies, storeAccountInfoInCookies } from '@/api/cookies';
 import { navVariants } from '@/libs/framer-motion/variants';
 import { HEDERA_COMMON_WALLET_REVERT_REASONS } from '@/utils/common/constants';
+import { getCurrentChainId, getWalletObject, getWalletProvider } from '@/api/wallet';
+import { BrowserProvider } from 'ethers';
 
 const Navbar = () => {
   // local states
@@ -25,6 +27,7 @@ const Navbar = () => {
   const [isConnected, setIsConnected] = useState(false);
   const [didWalletPop, setDidWalletPop] = useState(false);
   const [network, setNetwork] = useState<TNetworkName>('testnet');
+  const { walletProvider, err: walletProviderErr } = getWalletProvider();
 
   // listen to pathname change event to retrieve account information cookies
   useEffect(() => {
@@ -53,6 +56,45 @@ const Navbar = () => {
       setNetwork(JSON.parse(accountsInfo.network) as TNetworkName);
     }
   }, [pathname, toaster]);
+
+  const handleAccountsChanged = useCallback(async (accounts: string[]) => {
+    if (accounts.length > 0) {
+      // get current chainId
+      const currentChainId = (await getCurrentChainId(walletProvider as BrowserProvider))
+        .currentChainId as string;
+
+      // convert chainIdToNetwork
+      const network = chainIdToNetwork(currentChainId);
+
+      // store accounts to Cookies
+      const err = storeAccountInfoInCookies(accounts, network);
+      if (err) {
+        CommonErrorToast({
+          toaster,
+          title: 'Error connecting account',
+          description: HEDERA_COMMON_WALLET_REVERT_REASONS.DEFAULT.description,
+        });
+        return;
+      }
+
+      setAccounts(accounts as string[]);
+      setIsConnected(true);
+    }
+  }, [toaster, walletProvider]);
+
+  // listen to account change
+  useEffect(() => {
+    if (accounts.length === 0 || !isConnected) return;
+
+    const ethereum = getWalletObject();
+    if (!ethereum) return;
+
+    ethereum.on('accountsChanged', handleAccountsChanged);
+
+    return () => {
+      ethereum.removeListener('accountsChanged', handleAccountsChanged)
+    }
+  }, [accounts.length, handleAccountsChanged, isConnected]);
 
   return (
     <motion.nav
